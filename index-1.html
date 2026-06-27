@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="om">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Badho_Bingo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .dot { width: 14px; height: 14px; border-radius: 9999px; display: inline-block; }
+    .num-card { transition: transform .08s ease; }
+    .num-card:active { transform: scale(0.96); }
+    .num-card.disabled { opacity: 0.55; cursor: not-allowed; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 via-white to-amber-50 min-h-screen text-slate-800">
+
+  <!-- ============ Header ============ -->
+  <header class="sticky top-0 z-30 bg-emerald-600 text-white shadow-md">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-full bg-white/20 grid place-items-center text-xl">🎯</div>
+        <div>
+          <h1 class="text-lg font-extrabold leading-none">Badho_Bingo</h1>
+          <p class="text-[10px] uppercase tracking-wider opacity-80">Iskuɗii • Dorgomtoota</p>
+        </div>
+      </div>
+      <div id="user-badge" class="hidden text-xs bg-white/15 px-2 py-1 rounded-full"></div>
+    </div>
+    <!-- tabs -->
+    <nav class="max-w-3xl mx-auto px-2 pb-1 flex gap-1 text-sm">
+      <button data-tab="home"      class="tab-btn px-3 py-2 rounded-t-lg bg-white text-emerald-700 font-semibold">Iskuɗii</button>
+      <button data-tab="winners"   class="tab-btn px-3 py-2 rounded-t-lg text-white/90">Dorgomtoota</button>
+      <button data-tab="profile"   class="tab-btn px-3 py-2 rounded-t-lg text-white/90">Profile</button>
+      <button data-tab="admin"     class="tab-btn px-3 py-2 rounded-t-lg text-white/90 hidden">Admin</button>
+    </nav>
+  </header>
+
+  <!-- ============ Toast ============ -->
+  <div id="toast" class="fixed top-3 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg"></div>
+
+  <main class="max-w-3xl mx-auto p-4">
+
+    <!-- ===== HOME / LOTTERIES ===== -->
+    <section id="tab-home" class="tab-pane">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-bold">Iskuɗii (Active Lotteries)</h2>
+        <button id="refresh-home" class="text-xs text-emerald-700 underline">Refresh</button>
+      </div>
+      <div id="lottery-list" class="grid gap-3 sm:grid-cols-2"></div>
+    </section>
+
+    <!-- ===== LOTTERY DETAIL (modal-ish overlay) ===== -->
+    <section id="tab-lottery" class="tab-pane hidden">
+      <button id="back-home" class="text-sm text-emerald-700 mb-3">← Iskuɗii</button>
+      <div id="lottery-header" class="mb-4"></div>
+      <div class="flex gap-3 text-xs mb-3 flex-wrap">
+        <span class="inline-flex items-center gap-1"><span class="dot bg-emerald-500"></span> Qabadhu</span>
+        <span class="inline-flex items-center gap-1"><span class="dot bg-amber-400"></span> Gaafachaa jira</span>
+        <span class="inline-flex items-center gap-1"><span class="dot bg-rose-500"></span> Qabameera</span>
+      </div>
+      <div id="number-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-2"></div>
+    </section>
+
+    <!-- ===== PAYMENT ===== -->
+    <section id="tab-payment" class="tab-pane hidden">
+      <button id="back-lottery" class="text-sm text-emerald-700 mb-3">← Lakkoofsa</button>
+      <div class="bg-white rounded-2xl shadow p-4 space-y-3">
+        <h3 class="text-lg font-bold">Kaffaltii — Lakkoofsa <span id="pay-number"></span></h3>
+        <p class="text-sm text-slate-700">Qarshii amma jedhame ergiitii Screenshot saa ergiitii.</p>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <p class="text-xs text-slate-500">Bankii daldaala (CBE)</p>
+          <p class="font-mono font-bold text-lg">1000567035658</p>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+          <p class="text-xs text-slate-500">Telebirr</p>
+          <p class="font-mono font-bold text-lg">0942979347</p>
+        </div>
+
+        <input id="screenshot-input" type="file" accept="image/*" capture="environment"
+               class="block w-full text-sm" />
+        <img id="screenshot-preview" class="hidden rounded-xl border max-h-64" />
+
+        <button id="submit-payment" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold disabled:opacity-50">
+          Upload & Submit
+        </button>
+        <p id="pay-status" class="text-xs text-slate-500"></p>
+      </div>
+    </section>
+
+    <!-- ===== WINNERS ===== -->
+    <section id="tab-winners" class="tab-pane hidden">
+      <h2 class="text-xl font-bold mb-3">Dorgomtoota (Winners)</h2>
+      <div id="winner-list" class="space-y-4"></div>
+    </section>
+
+    <!-- ===== PROFILE ===== -->
+    <section id="tab-profile" class="tab-pane hidden">
+      <div class="bg-white rounded-2xl shadow p-4 space-y-3">
+        <h2 class="text-lg font-bold">Profile</h2>
+        <p class="text-sm text-slate-600">
+          Web account ID keessan (bot waliin link gochuuf):
+        </p>
+        <div class="flex items-center gap-2">
+          <code id="web-user-id" class="bg-slate-100 px-2 py-1 rounded text-xs flex-1 truncate"></code>
+          <button id="copy-id" class="text-xs bg-slate-800 text-white px-2 py-1 rounded">Copy</button>
+        </div>
+        <ol class="text-sm text-slate-700 list-decimal pl-5 space-y-1">
+          <li>Telegram keessatti <code>@badhobingo_bot</code> banu.</li>
+          <li>Ergi: <code>/link <span id="web-user-id-2"></span></code></li>
+          <li>Erga link ta'een booda payment screenshot upload ni hojjeta.</li>
+        </ol>
+        <button id="logout" class="text-rose-600 text-sm underline">Sign out</button>
+      </div>
+    </section>
+
+    <!-- ===== ADMIN ===== -->
+    <section id="tab-admin" class="tab-pane hidden">
+      <h2 class="text-xl font-bold mb-3">Admin Dashboard</h2>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <button data-action="new-lottery" class="admin-action bg-emerald-600 text-white py-3 rounded-xl font-bold">+ Create Lottery</button>
+        <button data-action="list-lotteries" class="admin-action bg-slate-800 text-white py-3 rounded-xl font-bold">All Lotteries</button>
+        <button data-action="pending-payments" class="admin-action bg-amber-500 text-white py-3 rounded-xl font-bold">Pending Payments</button>
+        <button data-action="post-winner" class="admin-action bg-purple-600 text-white py-3 rounded-xl font-bold">Post Winner</button>
+      </div>
+      <div id="admin-output" class="mt-4 space-y-3"></div>
+    </section>
+
+  </main>
+
+<script>
+/* =========================================================
+   Badho_Bingo — frontend
+   Backend = Python bot (bot.py) + Telegram storage channel.
+   The bot exposes an HTTP API; we call it from here.
+   ========================================================= */
+
+// ============ CONFIG ============
+// BOT_TOKEN and STORAGE_CHANNEL_ID are baked into the bot backend.
+// The web app only needs to know the bot API base URL.
+// For PythonAnywhere, set this to your PA web app URL.
+// For local bot on your laptop, use http://YOUR_LAN_IP:8080
+// For ngrok/cloudflare-tunnel: paste the public URL.
+const API_BASE = localStorage.getItem('bb_api_base') || 'http://localhost:8080';
+
+// ============ USER IDENTITY ============
+// We mint a random web user_id and stash it in localStorage.
+// The user runs /link <web_user_id> in Telegram to bind it to their TG account.
+function getWebUserId() {
+  let id = localStorage.getItem('bb_web_uid');
+  if (!id) {
+    id = 'w_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    localStorage.setItem('bb_web_uid', id);
+  }
+  return id;
+}
+const WEB_USER_ID = getWebUserId();
+document.getElementById('web-user-id').textContent = WEB_USER_ID;
+document.getElementById('web-user-id-2').textContent = WEB_USER_ID;
+
+// ============ SIMPLE STATE ============
+let currentTab = 'home';
+let currentLotteryId = null;
+let currentNumber = null;
+let pollHandles = [];
+
+// ============ TOAST ============
+const toast = document.getElementById('toast');
+function showToast(msg, ms = 2200) {
+  toast.textContent = msg;
+  toast.classList.remove('hidden');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.add('hidden'), ms);
+}
+
+// ============ API HELPERS ============
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  headers['X-Web-User'] = WEB_USER_ID;
+  const res = await fetch(API_BASE + path, {
+    ...opts,
+    headers,
+    body: opts.body && typeof opts.body !== 'string' ? JSON.stringify(opts.body) : opts.body,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    let err;
+    try { err = JSON.parse(text); } catch { err = { error: text }; }
+    const e = new Error(err.error || `HTTP ${res.status}`);
+    e.status = err.status;
+    e.payload = err;
+    throw e;
+  }
+  return res.json();
+}
+
+async function apiUpload(path, file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(API_BASE + path, {
+    method: 'POST',
+    headers: { 'X-Web-User': WEB_USER_ID },
+    body: fd,
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(t || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// ============ TABS ============
+const tabs = document.querySelectorAll('.tab-btn');
+tabs.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+  document.getElementById('tab-' + name)?.classList.remove('hidden');
+  tabs.forEach(b => {
+    if (b.dataset.tab === name) {
+      b.classList.add('bg-white', 'text-emerald-700', 'font-semibold');
+      b.classList.remove('text-white/90');
+    } else {
+      b.classList.remove('bg-white', 'text-emerald-700', 'font-semibold');
+      b.classList.add('text-white/90');
+    }
+  });
+  // Stop all polling, then start what this tab needs.
+  pollHandles.forEach(h => clearInterval(h));
+  pollHandles = [];
+  if (name === 'home') loadLotteries();
+  if (name === 'winners') loadWinners();
+  if (name === 'lottery' && currentLotteryId) startLotteryPoll(currentLotteryId);
+}
+
+// ============ HOME: LOTTERIES ============
+async function loadLotteries() {
+  const list = document.getElementById('lottery-list');
+  list.innerHTML = '<p class="text-sm text-slate-500">Loading…</p>';
+  try {
+    const { lotteries } = await api('/api/lotteries');
+    const active = lotteries.filter(l => l.status === 'active');
+    if (active.length === 0) {
+      list.innerHTML = '<p class="text-sm text-slate-500">Iskuɗii homtuu jira. Booda deebi\'aa.</p>';
+      return;
+    }
+    list.innerHTML = '';
+    for (const l of active) {
+      const el = document.createElement('button');
+      el.className = 'text-left bg-white rounded-2xl shadow p-4 hover:shadow-md transition';
+      el.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-bold text-emerald-800">${escapeHtml(l.title)}</h3>
+            <p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHtml(l.description || '')}</p>
+          </div>
+          <span class="text-[10px] uppercase bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Active</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2">Lakkoofsa: 1 – ${l.max_number}</p>
+      `;
+      el.onclick = () => openLottery(l.id);
+      list.appendChild(el);
+    }
+  } catch (e) {
+    list.innerHTML = `<p class="text-sm text-rose-600">Bot waliin wal-qunnamtii ni dadhaba. API_BASE jiraa? ${escapeHtml(e.message)}</p>`;
+  }
+}
+document.getElementById('refresh-home').onclick = loadLotteries;
+
+// ============ LOTTERY DETAIL ============
+async function openLottery(lid) {
+  currentLotteryId = lid;
+  switchTab('lottery');
+  document.getElementById('lottery-header').innerHTML = '<p class="text-sm text-slate-500">Loading…</p>';
+  await refreshLottery();
+  startLotteryPoll(lid);
+}
+document.getElementById('back-home').onclick = () => switchTab('home');
+
+async function refreshLottery() {
+  if (!currentLotteryId) return;
+  try {
+    const { lottery, numbers } = await api('/api/lottery/' + currentLotteryId);
+    document.getElementById('lottery-header').innerHTML = `
+      <h2 class="text-xl font-bold">${escapeHtml(lottery.title)}</h2>
+      <p class="text-sm text-slate-600 mt-1">${escapeHtml(lottery.description || '')}</p>
+    `;
+    renderNumbers(numbers);
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+function renderNumbers(numbers) {
+  const grid = document.getElementById('number-grid');
+  grid.innerHTML = '';
+  for (const n of numbers) {
+    const btn = document.createElement('button');
+    const status = n.status;
+    const colors = {
+      available: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      pending:   'bg-amber-100 text-amber-800 border-amber-300 disabled',
+      taken:     'bg-rose-100 text-rose-800 border-rose-300 disabled',
+    };
+    btn.className = `num-card border-2 rounded-xl py-3 text-center font-bold ${colors[status] || ''}`;
+    btn.textContent = n.value;
+    if (status === 'available') {
+      btn.onclick = () => onClickAvailable(n);
+    } else {
+      btn.disabled = true;
+    }
+    grid.appendChild(btn);
+  }
+}
+
+function startLotteryPoll(lid) {
+  // Re-poll every 5s for live updates.
+  const h = setInterval(refreshLottery, 5000);
+  pollHandles.push(h);
+}
+
+async function onClickAvailable(n) {
+  try {
+    await api('/api/claim', {
+      method: 'POST',
+      body: { lottery_id: currentLotteryId, number: n.value, web_user_id: WEB_USER_ID },
+    });
+    currentNumber = n;
+    document.getElementById('pay-number').textContent = n.value;
+    switchTab('payment');
+    document.getElementById('screenshot-input').value = '';
+    document.getElementById('screenshot-preview').classList.add('hidden');
+    document.getElementById('pay-status').textContent = '';
+  } catch (e) {
+    if (e.status === 'taken' || e.payload?.status) {
+      showToast('Lakkoofsi kun qabamaera. Mee isa biraa filadhu.');
+      refreshLottery();
+    } else {
+      showToast('Error: ' + e.message);
+    }
+  }
+}
+
+// ============ PAYMENT ============
+const screenshotInput = document.getElementById('screenshot-input');
+const screenshotPreview = document.getElementById('screenshot-preview');
+screenshotInput.addEventListener('change', () => {
+  const f = screenshotInput.files[0];
+  if (!f) return;
+  screenshotPreview.src = URL.createObjectURL(f);
+  screenshotPreview.classList.remove('hidden');
+});
+document.getElementById('back-lottery').onclick = () => switchTab('lottery');
+
+document.getElementById('submit-payment').onclick = async () => {
+  const file = screenshotInput.files[0];
+  if (!file) {
+    showToast('Screenshot barbaachisa.');
+    return;
+  }
+  const btn = document.getElementById('submit-payment');
+  btn.disabled = true;
+  document.getElementById('pay-status').textContent = 'Uploading…';
+  try {
+    const up = await apiUpload('/api/upload', file);
+    const n_id = `${currentLotteryId}:${currentNumber.value}`;
+    const r = await api('/api/payment', {
+      method: 'POST',
+      body: {
+        lottery_id: currentLotteryId,
+        number_id: n_id,
+        web_user_id: WEB_USER_ID,
+        telegram_file_id: up.file_id,
+      },
+    });
+    document.getElementById('pay-status').textContent = '';
+    alert('Screenshot keessan ergameera. Admin itti falmii keessan eeggata.');
+    switchTab('home');
+  } catch (e) {
+    document.getElementById('pay-status').textContent = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// ============ WINNERS ============
+async function loadWinners() {
+  const list = document.getElementById('winner-list');
+  list.innerHTML = '<p class="text-sm text-slate-500">Loading…</p>';
+  try {
+    const { winners } = await api('/api/winners');
+    if (winners.length === 0) {
+      list.innerHTML = '<p class="text-sm text-slate-500">Dorgomtoota homtuu jira.</p>';
+      return;
+    }
+    list.innerHTML = '';
+    for (const w of winners) {
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-2xl shadow p-4';
+      const nums = (w.winning_numbers || []).map(n =>
+        `<span class="inline-block bg-emerald-100 text-emerald-800 rounded-full px-2 py-0.5 text-xs font-bold mr-1">${n}</span>`
+      ).join('');
+      const video = w.video_url ? renderVideoEmbed(w.video_url) : '';
+      card.innerHTML = `
+        <h3 class="font-bold text-emerald-800">Dorgomtoota: ${nums}</h3>
+        <p class="text-sm text-slate-700 mt-1">${escapeHtml(w.prize_description || '')}</p>
+        <p class="text-[11px] text-slate-400 mt-1">${new Date((w.announced_at || 0) * 1000).toLocaleString()}</p>
+        ${video}
+      `;
+      list.appendChild(card);
+    }
+  } catch (e) {
+    list.innerHTML = '<p class="text-sm text-rose-600">Error: ' + escapeHtml(e.message) + '</p>';
+  }
+}
+
+function renderVideoEmbed(url) {
+  // YouTube?
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{6,})/);
+  if (yt) {
+    return `<div class="mt-3 aspect-video"><iframe class="w-full h-full rounded-xl" src="https://www.youtube.com/embed/${yt[1]}" allowfullscreen></iframe></div>`;
+  }
+  // Direct video file
+  if (/\.(mp4|webm|mov)(\?|$)/i.test(url)) {
+    return `<video controls class="w-full rounded-xl mt-3" src="${escapeHtml(url)}"></video>`;
+  }
+  // Fallback: link
+  return `<a href="${escapeHtml(url)}" target="_blank" class="text-emerald-700 underline text-sm mt-2 inline-block">Watch video →</a>`;
+}
+
+// ============ PROFILE ============
+document.getElementById('copy-id').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(WEB_USER_ID);
+    showToast('Copied');
+  } catch {
+    showToast('Copy failed');
+  }
+};
+document.getElementById('logout').onclick = () => {
+  if (!confirm('Sign out?')) return;
+  localStorage.removeItem('bb_web_uid');
+  localStorage.removeItem('bb_api_base');
+  location.reload();
+};
+
+// ============ ADMIN ============
+document.querySelectorAll('.admin-action').forEach(btn => {
+  btn.onclick = () => runAdminAction(btn.dataset.action);
+});
+
+async function runAdminAction(action) {
+  const out = document.getElementById('admin-output');
+  out.innerHTML = '';
+  if (action === 'new-lottery') {
+    out.innerHTML = `
+      <div class="bg-white rounded-2xl shadow p-4 space-y-2">
+        <input id="al-title" placeholder="Title" class="w-full border rounded p-2" />
+        <textarea id="al-desc" placeholder="Description" class="w-full border rounded p-2"></textarea>
+        <input id="al-max" type="number" min="1" placeholder="Max Number" class="w-full border rounded p-2" />
+        <button id="al-go" class="bg-emerald-600 text-white px-3 py-2 rounded">Create</button>
+        <p class="text-xs text-slate-500">Note: this UI just shows the command to run in Telegram — the bot itself does the writes.</p>
+      </div>`;
+    document.getElementById('al-go').onclick = () => {
+      const t = document.getElementById('al-title').value.trim();
+      const d = document.getElementById('al-desc').value.trim();
+      const m = parseInt(document.getElementById('al-max').value, 10);
+      if (!t || !m) { showToast('Title + max number required'); return; }
+      const cmd = `/new_lottery ${t} | ${d} | ${m}`;
+      out.innerHTML += `<pre class="bg-slate-900 text-emerald-200 p-3 rounded text-xs overflow-x-auto">${escapeHtml(cmd)}</pre>
+        <p class="text-xs">Run this in Telegram @badhobingo_bot</p>`;
+    };
+  }
+  if (action === 'list-lotteries') {
+    try {
+      const { lotteries } = await api('/api/lotteries');
+      out.innerHTML = lotteries.map(l => `
+        <div class="bg-white rounded-xl shadow p-3 flex justify-between items-start">
+          <div>
+            <p class="font-bold">${escapeHtml(l.title)}</p>
+            <p class="text-xs text-slate-500">${l.id}</p>
+            <p class="text-xs">Status: ${l.status} • max=${l.max_number}</p>
+          </div>
+          <div class="flex flex-col gap-1">
+            <button data-complete="${l.id}" class="text-xs bg-amber-500 text-white px-2 py-1 rounded">Complete</button>
+            <button data-delete="${l.id}" class="text-xs bg-rose-500 text-white px-2 py-1 rounded">Delete</button>
+          </div>
+        </div>`).join('');
+      out.querySelectorAll('[data-complete]').forEach(b => b.onclick = () => showAdminCommand(`/complete_lottery ${b.dataset.complete}`));
+      out.querySelectorAll('[data-delete]').forEach(b => b.onclick = () => showAdminCommand(`/delete_lottery ${b.dataset.delete}`));
+    } catch (e) {
+      out.innerHTML = '<p class="text-rose-600">' + escapeHtml(e.message) + '</p>';
+    }
+  }
+  if (action === 'pending-payments') {
+    // Bot API doesn't expose pending list to the web; admin runs /pending_payments
+    out.innerHTML = `
+      <div class="bg-white rounded-2xl shadow p-4 space-y-2">
+        <p class="text-sm">Run in Telegram: <code>/pending_payments</code></p>
+        <p class="text-xs text-slate-500">The bot will list pending payments with Approve / Reject buttons right there in Telegram. Easier than embedding that flow here.</p>
+      </div>`;
+  }
+  if (action === 'post-winner') {
+    out.innerHTML = `
+      <div class="bg-white rounded-2xl shadow p-4 space-y-2">
+        <input id="pw-lid" placeholder="lottery_id" class="w-full border rounded p-2" />
+        <input id="w-nums" placeholder="winning numbers e.g. 1,5,12" class="w-full border rounded p-2" />
+        <input id="w-prize" placeholder="prize description" class="w-full border rounded p-2" />
+        <input id="w-video" placeholder="youtube or direct video URL" class="w-full border rounded p-2" />
+        <button id="w-go" class="bg-purple-600 text-white px-3 py-2 rounded">Build Command</button>
+      </div>`;
+    document.getElementById('w-go').onclick = () => {
+      const cmd = `/post_winner ${document.getElementById('pw-lid').value.trim()} | ${document.getElementById('w-nums').value.trim()} | ${document.getElementById('w-prize').value.trim()}`;
+      out.innerHTML += `<pre class="bg-slate-900 text-emerald-200 p-3 rounded text-xs overflow-x-auto">${escapeHtml(cmd)}</pre>
+        <p class="text-xs">Run in Telegram. Then add the video URL via direct DB write (TODO: expose /set_winner_video).</p>`;
+    };
+  }
+}
+function showAdminCommand(cmd) {
+  document.getElementById('admin-output').innerHTML +=
+    `<pre class="bg-slate-900 text-emerald-200 p-3 rounded text-xs overflow-x-auto mt-2">${escapeHtml(cmd)}</pre>
+     <p class="text-xs">Run in Telegram @badhobingo_bot</p>`;
+}
+
+// ============ ADMIN GATE ============
+// Show the Admin tab if the localStorage flag is set.
+// (The real admin gate is the bot — only ADMIN_TG_ID can run admin commands.)
+function tryShowAdminTab() {
+  if (localStorage.getItem('bb_is_admin') === '1') {
+    document.querySelector('.tab-btn[data-tab="admin"]').classList.remove('hidden');
+  }
+}
+tryShowAdminTab();
+
+// ============ UTIL ============
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]);
+}
+
+// ============ FIRST RUN ============
+loadLotteries();
+</script>
+</body>
+</html>
